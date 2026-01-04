@@ -1,0 +1,10 @@
+{
+    "require": {
+        "namingo/plexdns": "^1.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
+}
