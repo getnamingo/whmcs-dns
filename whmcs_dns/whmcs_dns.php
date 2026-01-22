@@ -41,6 +41,7 @@ function whmcs_dns_config()
                 'Options'      => [
                     'AnycastDNS'    => 'AnycastDNS',
                     'Bind'     => 'Bind',
+                    'Bunny'     => 'Bunny',
                     'Cloudflare' => 'Cloudflare',
                     'ClouDNS'    => 'ClouDNS',
                     'Desec'     => 'Desec',

@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="col-sm">
-                    <input type="number" class="form-control" placeholder="TTL" name="record_ttl" value="600" required>
+                    <input type="number" class="form-control" placeholder="TTL" name="record_ttl" value="3600" required>
                 </div>
 
                 <div class="col-sm">
