@@ -90,7 +90,7 @@ From your server:
 
 ```bash
 cd /tmp
-wget https://github.com/getnamingo/whmcs-dns/releases/download/v1.0.0/whmcs-dns-v1.0.1.tar.gz
+wget https://github.com/getnamingo/whmcs-dns/releases/download/v1.0.1/whmcs-dns-v1.0.1.tar.gz
 tar xzf whmcs-dns-v1.0.1.tar.gz
 cd whmcs-dns-v1.0.1
 mv whmcs_dns /path/to/whmcs/modules/addons/whmcs_dns
