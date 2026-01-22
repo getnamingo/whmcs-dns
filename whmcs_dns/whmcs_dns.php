@@ -360,7 +360,22 @@ function whmcs_dns_clientarea($vars)
                         if ($recordType === '' || $recordValue === '') {
                             throw new Exception('Record type and value are required.');
                         }
-                        
+
+                        if ($recordType === 'MX' && $priority === null) {
+                            $priority = 0;
+                        }
+
+                        if ($recordType === 'TXT') {
+                            $v = trim($recordValue);
+                            if ($v === '' || $v[0] !== '"' || substr($v, -1) !== '"') {
+                                $recordValue = '"' . str_replace('"', '\"', $v) . '"';
+                            }
+                        }
+
+                        if (in_array($provider, ['PowerDNS'], true) && $recordType === 'CNAME') {
+                            $recordValue = rtrim(trim($recordValue), '.') . '.';
+                        }
+
                         $zone = Capsule::table(WHMCSDNS_TABLE_ZONES)
                             ->where('domain_name', $domainName)
                             ->where('client_id', $clientId)
@@ -410,6 +425,21 @@ function whmcs_dns_clientarea($vars)
 
                         if ($rowId <= 0) {
                             throw new Exception('Invalid record row id.');
+                        }
+                        
+                        if ($recordType === 'MX' && $priority === null) {
+                            $priority = 0;
+                        }
+
+                        if ($recordType === 'TXT') {
+                            $v = trim($recordValue);
+                            if ($v === '' || $v[0] !== '"' || substr($v, -1) !== '"') {
+                                $recordValue = '"' . str_replace('"', '\"', $v) . '"';
+                            }
+                        }
+
+                        if (in_array($provider, ['PowerDNS'], true) && $recordType === 'CNAME') {
+                            $recordValue = rtrim(trim($recordValue), '.') . '.';
                         }
 
                         // Resolve zone + row ownership
