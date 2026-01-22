@@ -73,6 +73,29 @@ Click **Save Changes** to apply the configuration.
 - Once enabled, DNS records can be **added, edited, or deleted**.
 - Clicking **“Disable DNS”** removes (deletes) the DNS zone from the provider.
 
+## WHMCS Module Update instructions
+
+To update the DNS hosting module to the latest version, download the newest release and replace the existing module files.
+
+### Manual update
+
+1. Download the **latest release** archive from the repository.
+2. Extract the archive to a temporary directory.
+3. Locate the `whmcs_dns` directory inside the extracted release.
+4. Copy the `whmcs_dns` directory into `/modules/addons`, **overwriting** the existing `whmcs_dns` directory.
+
+### Update via console
+
+From your server:
+
+```bash
+cd /tmp
+wget https://github.com/getnamingo/whmcs-dns/releases/download/v1.0.0/whmcs-dns-v1.0.1.tar.gz
+tar xzf whmcs-dns-v1.0.1.tar.gz
+cd whmcs-dns-v1.0.1
+mv whmcs_dns /path/to/whmcs/modules/addons/whmcs_dns
+```
+
 ## Support
 
 Your feedback and inquiries are invaluable to Namingo's evolutionary journey. If you need support, have questions, or want to contribute your thoughts:
@@ -85,7 +108,7 @@ Your feedback and inquiries are invaluable to Namingo's evolutionary journey. If
 
 We appreciate your involvement and patience as Namingo continues to grow and adapt.
 
-## 💖 Support This Project
+## Support This Project
 
 If you find DNS hosting module for WHMCS useful, consider donating:
 

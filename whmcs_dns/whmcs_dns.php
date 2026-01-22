@@ -2,7 +2,7 @@
 /**
  * WHMCS-DNS module
  *
- * Written in 2025 by Taras Kondratyuk (https://namingo.org)
+ * Written in 2025-2026 by Taras Kondratyuk (https://namingo.org)
  *
  * @license MIT
  * @see https://opensource.org/licenses/MIT
