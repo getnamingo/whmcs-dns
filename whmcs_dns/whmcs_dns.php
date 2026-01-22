@@ -453,6 +453,7 @@ function whmcs_dns_clientarea($vars)
                             'record_name'      => $recordName,
                             'record_type'      => $recordType,
                             'record_value'     => $recordValue,
+                            'old_value'        => $oldValue,
                             'record_ttl'       => $ttl,
                             'record_priority'  => $priority,
                             'provider'         => $provider,
