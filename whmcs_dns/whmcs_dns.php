@@ -265,13 +265,29 @@ function whmcs_dns_clientarea($vars)
                         if ($zone) {
                             $message = ['type' => 'success', 'text' => 'DNS is already enabled for this domain.'];
                         } else {
+                            $cfg = [
+                                'domain_name' => $domainName,
+                                'provider'    => $provider,
+                                'apikey'      => $apikey,
+                            ];
+
+                            if ($provider === 'PowerDNS') {
+                                $cfg['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                                for ($i = 1; $i <= 5; $i++) {
+                                    $k = 'ns' . $i;
+                                    if (!empty($vars[$k])) $cfg[$k] = $vars[$k];
+                                }
+                            } elseif ($provider === 'Bind') {
+                                $cfg['bindip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                                for ($i = 1; $i <= 5; $i++) {
+                                    $k = 'ns' . $i;
+                                    if (!empty($vars[$k])) $cfg[$k] = $vars[$k];
+                                }
+                            }
+
                             $domainOrder = [
                                 'client_id' => $clientId,
-                                'config'    => json_encode([
-                                    'domain_name' => $domainName,
-                                    'provider'    => $provider,
-                                    'apikey'      => $apikey,
-                                ], JSON_UNESCAPED_SLASHES),
+                                'config'    => json_encode($cfg, JSON_UNESCAPED_SLASHES),
                             ];
 
                             $plex->createDomain($domainOrder);
@@ -302,12 +318,28 @@ function whmcs_dns_clientarea($vars)
                         if (!$zone) {
                             $message = ['type' => 'success', 'text' => 'DNS is already disabled (zone not found).'];
                         } else {
+                            $cfg = [
+                                'domain_name' => $domainName,
+                                'provider'    => $provider,
+                                'apikey'      => $apikey,
+                            ];
+
+                            if ($provider === 'PowerDNS') {
+                                $cfg['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                                for ($i = 1; $i <= 5; $i++) {
+                                    $k = 'ns' . $i;
+                                    if (!empty($vars[$k])) $cfg[$k] = $vars[$k];
+                                }
+                            } elseif ($provider === 'Bind') {
+                                $cfg['bindip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                                for ($i = 1; $i <= 5; $i++) {
+                                    $k = 'ns' . $i;
+                                    if (!empty($vars[$k])) $cfg[$k] = $vars[$k];
+                                }
+                            }
+
                             $plex->deleteDomain([
-                                'config' => json_encode([
-                                    'domain_name' => $domainName,
-                                    'provider'    => $provider,
-                                    'apikey'      => $apikey,
-                                ], JSON_UNESCAPED_SLASHES),
+                                'config' => json_encode($cfg, JSON_UNESCAPED_SLASHES),
                             ]);
 
                             Capsule::table(WHMCSDNS_TABLE_RECORDS)->where('domain_id', $zone->id)->delete();
@@ -337,7 +369,7 @@ function whmcs_dns_clientarea($vars)
                             throw new Exception('DNS is not enabled for this domain. Click "Enable DNS" first.');
                         }
 
-                        $plex->addRecord([
+                        $req = [
                             'domain_name'      => $domainName,
                             'record_name'      => $recordName,
                             'record_type'      => $recordType,
@@ -346,7 +378,23 @@ function whmcs_dns_clientarea($vars)
                             'record_priority'  => $priority,
                             'provider'         => $provider,
                             'apikey'           => $apikey,
-                        ]);
+                        ];
+
+                        if ($provider === 'PowerDNS') {
+                            $req['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                            for ($i = 1; $i <= 5; $i++) {
+                                $k = 'ns' . $i;
+                                if (!empty($vars[$k])) $req[$k] = $vars[$k];
+                            }
+                        } elseif ($provider === 'Bind') {
+                            $req['bindip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                            for ($i = 1; $i <= 5; $i++) {
+                                $k = 'ns' . $i;
+                                if (!empty($vars[$k])) $req[$k] = $vars[$k];
+                            }
+                        }
+
+                        $plex->addRecord($req);
 
                         $message = ['type' => 'success', 'text' => 'Record added.'];
                     }
@@ -399,7 +447,7 @@ function whmcs_dns_clientarea($vars)
                             throw new Exception('DNS is not enabled for this domain. Click "Enable DNS" first.');
                         }
 
-                        $plex->updateRecord([
+                        $req = [
                             'domain_name'      => $domainName,
                             'record_id'        => $recordId,
                             'record_name'      => $recordName,
@@ -409,7 +457,23 @@ function whmcs_dns_clientarea($vars)
                             'record_priority'  => $priority,
                             'provider'         => $provider,
                             'apikey'           => $apikey,
-                        ]);
+                        ];
+
+                        if ($provider === 'PowerDNS') {
+                            $req['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                            for ($i = 1; $i <= 5; $i++) {
+                                $k = 'ns' . $i;
+                                if (!empty($vars[$k])) $req[$k] = $vars[$k];
+                            }
+                        } elseif ($provider === 'Bind') {
+                            $req['bindip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                            for ($i = 1; $i <= 5; $i++) {
+                                $k = 'ns' . $i;
+                                if (!empty($vars[$k])) $req[$k] = $vars[$k];
+                            }
+                        }
+
+                        $plex->updateRecord($req);
 
                         $message = ['type' => 'success', 'text' => 'Record updated.'];
                     }
@@ -449,7 +513,7 @@ function whmcs_dns_clientarea($vars)
                             throw new Exception('DNS is not enabled for this domain. Click "Enable DNS" first.');
                         }
 
-                        $plex->delRecord([
+                        $req = [
                             'domain_name'      => $domainName,
                             'record_id'        => $recordId,
                             'record_name'      => (string)$rec->host,
@@ -457,7 +521,23 @@ function whmcs_dns_clientarea($vars)
                             'record_value'     => (string)$rec->value,
                             'provider'         => $provider,
                             'apikey'           => $apikey,
-                        ]);
+                        ];
+
+                        if ($provider === 'PowerDNS') {
+                            $req['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                            for ($i = 1; $i <= 5; $i++) {
+                                $k = 'ns' . $i;
+                                if (!empty($vars[$k])) $req[$k] = $vars[$k];
+                            }
+                        } elseif ($provider === 'Bind') {
+                            $req['bindip'] = $vars['bind_powerdns_api_ip'] ?? null;
+                            for ($i = 1; $i <= 5; $i++) {
+                                $k = 'ns' . $i;
+                                if (!empty($vars[$k])) $req[$k] = $vars[$k];
+                            }
+                        }
+
+                        $plex->delRecord($req);
 
                         $message = ['type' => 'success', 'text' => 'Record deleted.'];
                     }
@@ -511,24 +591,24 @@ function whmcs_dns_clientarea($vars)
         }
     }
 
-	$domainCrumbs = [
-		'index.php?m=whmcs_dns&domain=' . urlencode($selectedDomain) => 'DNS Manager',
-	];
+    $domainCrumbs = [
+        'index.php?m=whmcs_dns&domain=' . urlencode($selectedDomain) => 'DNS Manager',
+    ];
 
-	if ($selectedDomain !== '') {
-		$domainId = (int) Capsule::table('tbldomains')
-			->where('userid', $clientId)
-			->where('domain', $selectedDomain)
-			->value('id');
+    if ($selectedDomain !== '') {
+        $domainId = (int) Capsule::table('tbldomains')
+            ->where('userid', $clientId)
+            ->where('domain', $selectedDomain)
+            ->value('id');
 
-		if ($domainId > 0) {
-			$domainCrumbs = [
-				'clientarea.php?action=domains' => 'My Domains',
-				'clientarea.php?action=domaindetails&id=' . $domainId => $selectedDomain,
-				'index.php?m=whmcs_dns&domain=' . urlencode($selectedDomain) => 'DNS Manager',
-			];
-		}
-	}
+        if ($domainId > 0) {
+            $domainCrumbs = [
+                'clientarea.php?action=domains' => 'My Domains',
+                'clientarea.php?action=domaindetails&id=' . $domainId => $selectedDomain,
+                'index.php?m=whmcs_dns&domain=' . urlencode($selectedDomain) => 'DNS Manager',
+            ];
+        }
+    }
 
     return [
         'pagetitle'    => 'DNS Manager',
