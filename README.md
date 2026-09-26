@@ -1,100 +1,20 @@
-# DNS hosting module for WHMCS
+# DNS hosting as a paid or free WHMCS product, backed by PlexDNS 1.0.15 or later in the 1.x series. Zones are provisioned when a product is activated and removed on termination or direct service deletion. A domain registered elsewhere works too.
 
-[![StandWithUkraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
+## Install and configure
 
-[![SWUbanner](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
+1. Copy `whmcs_dns/` to `modules/addons/whmcs_dns/` and `whmcs_dns_product/` to `modules/servers/whmcs_dns_product/`.
+2. In `modules/addons/whmcs_dns/`, run `composer install --no-dev` with PHP 8.3+; this installs PlexDNS and its provider libraries. Activate **DNS Hosting** in WHMCS System Settings → Addon Modules. An update from 1.0.x adds a nullable `service_id` to the existing `zones` table without deleting old zones.
+3. Configure the provider, credentials, optional SOA email, API endpoint for BIND/PowerDNS, and **NS1–NS5** in the addon settings. ClouDNS uses its separate Auth ID and Auth Password. For Cloudflare, use an API token or `email:global_api_key` in API Key; the client area fetches its per-zone assigned nameservers. Configure nameservers explicitly for other providers so they can be shown to customers.
+4. Create a WHMCS product of type **Other**, set **Require Domain**, select **Namingo DNS Hosting** as the module, and set its price. A zero price makes it free. Offer the DNS product alongside a registration or let customers use a domain they already own. Configure automatic module activation after the desired payment or acceptance stage, and enable termination automation as desired.
+5. Customers manage records and DNSSEC via their product or DNS Manager. DNSSEC displays the provider's enabled status and DS records to publish with the registrar. Remove parent DS records before disabling DNSSEC to avoid a resolution failure.
 
-DNS hosting module for WHMCS
+Suspension blocks editing but keeps existing DNS resolving. Termination deletes the provider zone and local records. Deleting the WHMCS service directly triggers the same cleanup; a provider failure is written to the WHMCS activity log for staff to investigate and clean up manually. Deactivating the addon preserves zones and records.
 
-## Supported Providers
+Existing manually created zones are adopted when a matching client's DNS product is provisioned, if the configured provider is unchanged. They are not shown for DNS management until attached to an active product. One DNS product manages one zone, and a domain can have only one DNS service. To switch providers, migrate the zone before changing the addon provider settings.
 
-Most DNS providers **require an API key**, while some may need **additional settings** such as authentication credentials or specific server configurations. All required values must be set in the `.env` file.
+## Supported providers
 
-| Provider    | Credentials in .env | Requirements  | Status | DNSSEC |
-|------------|---------------------|------------|---------------------|---------------------|
-| **AnycastDNS** | `API_KEY` | | ✅ | ❌ |
-| **Bind9** | `API_KEY:BIND_IP` | [bind9-api-server](https://github.com/getnamingo/bind9-api-server)/[bind9-api-server-sqlite](https://github.com/getnamingo/bind9-api-server-sqlite) | ✅ | 🚧 |
-| **Bunny** | `API_KEY` | | ✅ | ✅ |
-| **Cloudflare** | `EMAIL:API_KEY` or `API_TOKEN` | | ✅ | ❌ |
-| **ClouDNS** | `AUTH_ID:AUTH_PASSWORD` | | ✅ | ✅ |
-| **Desec** | `API_KEY` | | ✅ | ✅ |
-| **DNSimple** | `API_KEY` | | ✅ | ❌ |
-| **Hetzner** | `API_KEY` | | 🚧 | ❌ |
-| **PowerDNS** | `API_KEY:POWERDNS_IP` | gmysql-dnssec=yes in pdns.conf | ✅ | ✅ |
-| **Vultr** | `API_KEY` | | ✅ | ❌ |
-
-## WHMCS Module Installation instructions
-
-### 1. Upload the Module
-
-1. Download the latest release archive of the module.
-2. Extract the archive on your local machine.
-3. Upload the `whmcs_dns` directory to your WHMCS installation so the final structure is: `/modules/addons/whmcs_dns/`
-4. Verify that the module files are readable by the web server user.
-
-### 2. Activate the Addon in WHMCS
-
-1. Log in to the **WHMCS Admin Area**.
-2. Navigate to **System Settings → Addons**.
-3. Locate **DNS Hosting** in the list.
-4. Click **Activate**.
-
-### (BIND9 Module only) 3. Installation of BIND9 API Server:
-
-To use the BIND9 module, you must install the [bind9-api-server](https://github.com/getnamingo/bind9-api-server) on your master BIND server. This API server allows for seamless integration and management of your DNS zones via API.
-
-Make sure to configure the API server according to your BIND installation parameters to ensure proper synchronization of your DNS zones.
-
-### 4. Configure the Addon
-
-After activating the addon, configure the module settings in **WHMCS → System Settings → Addons**:
-
-- **DNS Provider**  
-  Identifier of the PlexDNS-supported provider  
-  *(e.g. `Desec`, `PowerDNS`, `Cloudflare`, etc.)*
-
-- **API Key**  
-  API key for the selected DNS provider.
-
-- **SOA Email**  
-  Email address used in the SOA record (where applicable).
-
-- **Nameservers (NS1–NS5)**  
-  Nameservers that clients should point their domains to when using this DNS service.
-
-Click **Save Changes** to apply the configuration.
-
-### 5. Usage (Client Area)
-
-- Clients access DNS management from their **Domain Details** page.
-- A **“DNS Manager”** link appears in the domain sidebar.
-- DNS zones are **not created automatically**.
-- Clients must explicitly click **“Enable DNS”** to create a DNS zone.
-- Once enabled, DNS records can be **added, edited, or deleted**.
-- Clicking **“Disable DNS”** removes (deletes) the DNS zone from the provider.
-
-## WHMCS Module Update instructions
-
-To update the DNS hosting module to the latest version, download the newest release and replace the existing module files.
-
-### Manual update
-
-1. Download the **latest release** archive from the repository.
-2. Extract the archive to a temporary directory.
-3. Locate the `whmcs_dns` directory inside the extracted release.
-4. Copy the `whmcs_dns` directory into `/modules/addons`, **overwriting** the existing `whmcs_dns` directory.
-
-### Update via console
-
-From your server:
-
-```bash
-cd /tmp
-wget https://github.com/getnamingo/whmcs-dns/releases/download/v1.0.2/whmcs-dns-v1.0.2.tar.gz
-tar xzf whmcs-dns-v1.0.2.tar.gz
-cd whmcs-dns-v1.0.2
-mv whmcs_dns /path/to/whmcs/modules/addons/whmcs_dns
-```
+PlexDNS supports AnycastDNS, BIND, Bunny, Cloudflare, ClouDNS, deSEC, DNSimple, Hetzner, PowerDNS, and Vultr. DNSSEC controls are shown only when PlexDNS reports support; provider capabilities determine whether enable and disable buttons appear. BIND and Hetzner do not currently expose DNSSEC through PlexDNS. Nameservers come from the addon settings except for Cloudflare, whose assigned nameservers are fetched per zone.
 
 ## Support
 

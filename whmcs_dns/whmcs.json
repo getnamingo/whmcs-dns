@@ -2,20 +2,20 @@
   "schema": "1.0",
   "type": "whmcs-addons",
   "name": "whmcs_dns",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "license": "MIT",
   "category": "domains",
 
   "description": {
     "name": "WHMCS DNS",
-    "tagline": "DNS hosting and management for WHMCS domains.",
-    "long": "Manage DNS zones and records directly from WHMCS using multiple DNS providers. The module integrates DNS provisioning with the WHMCS domain lifecycle and provides customers with DNS zone and record management from the client area.",
+    "tagline": "Sell DNS hosting as a WHMCS product.",
+    "long": "Provision DNS hosting as a paid or free WHMCS product for any domain, with DNS records, nameservers and DNSSEC in the client area.",
     "features": [
       "Manage DNS zones and records from WHMCS",
       "Allow customers to manage DNS from the client area",
-      "Enable or disable DNS hosting per domain",
+      "Provision and terminate zones with a WHMCS product",
       "Support multiple DNS providers through PlexDNS",
-      "Integrate DNS provisioning with the WHMCS domain lifecycle"
+      "Show nameservers and provider DNSSEC status with DS records"
     ]
   },
 

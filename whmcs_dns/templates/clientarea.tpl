@@ -18,35 +18,25 @@
         <h2 class="mb-0">DNS Manager</h2>
     </div>
 
-    <div class="col-auto ms-auto">
-        {if $zone}
-            <form method="post"
-                  action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}"
-                  onsubmit="return confirm('Disable DNS and delete the zone for this domain?');"
-                  class="m-0">
-                <input type="hidden" name="action" value="disable_dns" />
-                <input type="hidden" name="domain_name" value="{$selectedDomain|escape}" />
-                <button type="submit" class="btn btn-outline-danger">
-                    Disable DNS
-                </button>
-            </form>
-        {else}
-            <form method="post"
-                  action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}"
-                  class="m-0">
-                <input type="hidden" name="action" value="enable_dns" />
-                <input type="hidden" name="domain_name" value="{$selectedDomain|escape}" />
-                <button type="submit" class="btn btn-outline-primary">
-                    Enable DNS
-                </button>
-            </form>
-        {/if}
-    </div>
+
 </div>
+
+{if $clientDomains}
+<form method="get" action="index.php" class="mb-3">
+    <input type="hidden" name="m" value="whmcs_dns" />
+    <label for="dns-domain">DNS hosting service</label>
+    <select id="dns-domain" name="domain" class="form-control" onchange="this.form.submit()">
+        <option value="">Select a domain</option>
+        {foreach $clientDomains as $d}
+            <option value="{$d.domain|escape}" {if $selectedDomain == $d.domain}selected{/if}>{$d.domain|escape}</option>
+        {/foreach}
+    </select>
+</form>
+{/if}
 
 {if !$zone}
     <div class="alert alert-info mb-3">
-        DNS is not enabled for this domain yet. Click <b>Enable DNS</b> to create the zone.
+        No active DNS hosting service is selected. Order a DNS hosting product or contact support.
     </div>
 {/if}
 
@@ -75,7 +65,6 @@
                         <option value="MX">MX</option>
                         <option value="TXT">TXT</option>
                         <option value="SPF">SPF</option>
-                        <option value="DS">DS</option>
                     </select>
                 </div>
 
@@ -220,6 +209,39 @@
                 {/if}
                 </tbody>
             </table>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-6 mb-3">
+                <h3 class="h5">Nameservers</h3>
+                <p>Set these nameservers at your domain registrar:</p>
+                {if $nameservers}
+                    {foreach $nameservers as $ns}<div><code>{$ns|escape}</code></div>{/foreach}
+                {else}<p>No nameservers configured. Contact support for the provider's assigned nameservers.</p>{/if}
+            </div>
+            {if $dnssec}
+                <div class="col-md-6 mb-3">
+                    <h3 class="h5">DNSSEC: {if $dnssec.enabled}Enabled{else}Disabled{/if}</h3>
+                    {if $dnssec.enforced}<p>This provider manages DNSSEC automatically.</p>{/if}
+                    {if $dnssec.ds}
+                        <p>Publish these DS records at your domain registrar:</p>
+                        {foreach $dnssec.ds as $ds}<div><code class="text-break">{$ds|escape}</code></div>{/foreach}
+                    {/if}
+                    {if !$dnssec.enabled && $dnssec.can_enable}
+                        <form method="post" action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}">
+                            <input type="hidden" name="action" value="enable_dnssec" />
+                            <input type="hidden" name="domain_name" value="{$zone.domain_name|escape}" />
+                            <button type="submit" class="btn btn-outline-success mt-2">Enable DNSSEC</button>
+                        </form>
+                    {elseif $dnssec.enabled && $dnssec.can_disable}
+                        <form method="post" action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}"
+                              onsubmit="return confirm('Remove the DS record at your registrar before disabling DNSSEC, or the domain may stop resolving. Continue?');">
+                            <input type="hidden" name="action" value="disable_dnssec" />
+                            <input type="hidden" name="domain_name" value="{$zone.domain_name|escape}" />
+                            <button type="submit" class="btn btn-outline-danger mt-2">Disable DNSSEC</button>
+                        </form>
+                    {/if}
+                </div>
+            {/if}
         </div>
     </div>
 </div>

@@ -64,6 +64,12 @@ add_hook('ClientAreaSecondarySidebar', 1, function ($sidebar) {
     }
 
     $domainName = (string) $domain->domain;
+    $activeServiceIds = Capsule::table('tblhosting')->where('userid', $clientId)
+        ->where('domainstatus', 'Active')->pluck('id')->toArray();
+    if (!$activeServiceIds || !Capsule::table('zones')->where('client_id', $clientId)
+        ->where('domain_name', $domainName)->whereIn('service_id', $activeServiceIds)->exists()) {
+        return;
+    }
     $url = 'index.php?m=whmcs_dns&domain=' . urlencode($domainName);
 
     try {
@@ -94,5 +100,16 @@ add_hook('ClientAreaSecondarySidebar', 1, function ($sidebar) {
         ]);
     } catch (\Throwable $e) {
         // no-op
+    }
+});
+// WHMCS does not invoke TerminateAccount when staff delete the service outright.
+add_hook('ServiceDelete', 1, function ($vars) {
+    $serviceId = (int)($vars['serviceid'] ?? 0);
+    if (!$serviceId) return;
+    try {
+        require_once __DIR__ . '/whmcs_dns.php';
+        whmcs_dns_delete_service($serviceId, (int)($vars['clientId'] ?? $vars['userid'] ?? 0));
+    } catch (\Throwable $e) {
+        logActivity('DNS cleanup failed for deleted service ' . $serviceId . ': ' . $e->getMessage());
     }
 });
