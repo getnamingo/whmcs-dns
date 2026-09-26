@@ -1,39 +1,35 @@
 {
   "schema": "1.0",
-  "type": "addon",
+  "type": "whmcs-addons",
   "name": "whmcs_dns",
-  "displayName": "DNS hosting module",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
-  "author": {
-    "name": "Namingo",
-    "homepage": "https://namingo.org"
-  },
+  "category": "domains",
+
   "description": {
-    "short": "DNS hosting module for WHMCS.",
-    "long": "A WHMCS addon module that enables per-domain DNS zone and record management using various providers. Includes client-side DNS enable/disable, record editing, and tight integration with the WHMCS domain lifecycle."
+    "name": "WHMCS DNS",
+    "tagline": "DNS hosting and management for WHMCS domains.",
+    "long": "Manage DNS zones and records directly from WHMCS using multiple DNS providers. The module integrates DNS provisioning with the WHMCS domain lifecycle and provides customers with DNS zone and record management from the client area.",
+    "features": [
+      "Manage DNS zones and records from WHMCS",
+      "Allow customers to manage DNS from the client area",
+      "Enable or disable DNS hosting per domain",
+      "Support multiple DNS providers through PlexDNS",
+      "Integrate DNS provisioning with the WHMCS domain lifecycle"
+    ]
   },
+
   "support": {
     "homepage": "https://namingo.org",
-    "email": "help@namingo.org"
+    "email": "help@namingo.org",
+    "support_url": "https://github.com/getnamingo/whmcs-dns/issues",
+    "docs_url": "https://github.com/getnamingo/whmcs-dns"
   },
-  "documentation": {
-    "homepage": "https://github.com/getnamingo/whmcs-dns"
-  },
-  "requirements": {
-    "whmcs": {
-      "min": "8.13"
-    },
-    "php": {
-      "min": "8.1"
+
+  "authors": [
+    {
+      "name": "Namingo",
+      "homepage": "https://namingo.org"
     }
-  },
-  "keywords": [
-    "dns",
-    "domains",
-    "whmcs",
-    "plexdns",
-    "nameservers",
-    "records"
   ]
 }

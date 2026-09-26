@@ -33,7 +33,7 @@ function whmcs_dns_config()
         'description' => 'DNS management addon enabling zone and record control via external providers',
         'author'      => 'Namingo',
         'language'    => 'english',
-        'version'     => '1.0.0',
+        'version'     => '1.0.2',
         'fields'      => [
             'provider' => [
                 'FriendlyName' => 'Provider',
@@ -183,6 +183,15 @@ function whmcs_dns_deactivate()
 function whmcs_dns_upgrade($vars)
 {
     // Keep for future migrations.
+}
+
+function whmcs_dns_output($vars)
+{
+    echo '<div class="alert alert-info">
+        Namingo DNS is configured from 
+        <strong>Configuration → System Settings → Addon Modules</strong>.
+        No additional administration is required here.
+    </div>';
 }
 
 /**
