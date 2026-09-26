@@ -474,11 +474,6 @@ function whmcs_dns_clientarea($vars)
                             throw new Exception('Record changed since page load. Please refresh and try again.');
                         }
 
-                        $recordId = $rec->recordId ?? null;
-                        if (empty($recordId)) {
-                            throw new Exception('This record is missing provider recordId. Please delete and re-create it.');
-                        }
-                        
                         $zone = Capsule::table(WHMCSDNS_TABLE_ZONES)
                             ->where('domain_name', $domainName)
                             ->where('client_id', $clientId)
@@ -489,11 +484,11 @@ function whmcs_dns_clientarea($vars)
 
                         $req = [
                             'domain_name'      => $domainName,
-                            'record_id'        => $recordId,
-                            'record_name'      => $recordName,
-                            'record_type'      => $recordType,
+                            'record_id'        => $rowId,
+                            'record_name'      => (string)$rec->host,
+                            'record_type'      => strtoupper((string)$rec->type),
                             'record_value'     => $recordValue,
-                            'old_value'        => $oldValue,
+                            'old_value'        => (string)$rec->value,
                             'record_ttl'       => $ttl,
                             'record_priority'  => $priority,
                             'provider'         => $provider,
@@ -541,11 +536,6 @@ function whmcs_dns_clientarea($vars)
                             throw new Exception('Record not found. Please refresh and try again.');
                         }
 
-                        $recordId = $rec->recordId ?? null;
-                        if (empty($recordId)) {
-                            throw new Exception('This record is missing provider recordId. Please delete and re-create it.');
-                        }
-                        
                         $zone = Capsule::table(WHMCSDNS_TABLE_ZONES)
                             ->where('domain_name', $domainName)
                             ->where('client_id', $clientId)
@@ -556,7 +546,7 @@ function whmcs_dns_clientarea($vars)
 
                         $req = [
                             'domain_name'      => $domainName,
-                            'record_id'        => $recordId,
+                            'record_id'        => $rowId,
                             'record_name'      => (string)$rec->host,
                             'record_type'      => strtoupper((string)$rec->type),
                             'record_value'     => (string)$rec->value,
