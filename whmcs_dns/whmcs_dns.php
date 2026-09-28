@@ -33,7 +33,7 @@ function whmcs_dns_config()
         'description' => 'DNS management addon enabling zone and record control via external providers',
         'author'      => 'Namingo',
         'language'    => 'english',
-        'version'     => '1.0.2',
+        'version'     => '1.1.0',
         'fields'      => [
             'provider' => [
                 'FriendlyName' => 'Provider',
@@ -59,6 +59,18 @@ function whmcs_dns_config()
                 'Size'         => '50',
                 'Default'      => '',
                 'Description'  => "Enter your DNS provider's API key. Keep it confidential and ensure it's valid for requests.",
+            ],
+            'cloudns_auth_id' => [
+                'FriendlyName' => 'ClouDNS Auth ID', 'Type' => 'text', 'Size' => '30',
+                'Description' => 'Required only for ClouDNS.',
+            ],
+            'cloudns_auth_password' => [
+                'FriendlyName' => 'ClouDNS Auth Password', 'Type' => 'password', 'Size' => '30',
+                'Description' => 'Required only for ClouDNS.',
+            ],
+            'max_zones_per_client' => [
+                'FriendlyName' => 'Maximum Zones Per Client', 'Type' => 'text', 'Size' => '8',
+                'Default' => '0', 'Description' => '0 means unlimited. Applies when a client enables DNS.',
             ],
 
             'soa_email' => [
@@ -194,6 +206,24 @@ function whmcs_dns_output($vars)
     </div>';
 }
 
+function whmcs_dns_provider_config(array $vars, string $domainName): array
+{
+    $config = [
+        'domain_name' => $domainName,
+        'provider' => $vars['provider'] ?? '',
+        'apikey' => $vars['apikey'] ?? '',
+        'cloudns_auth_id' => $vars['cloudns_auth_id'] ?? '',
+        'cloudns_auth_password' => $vars['cloudns_auth_password'] ?? '',
+        'soa_email' => $vars['soa_email'] ?? '',
+    ];
+    if ($config['provider'] === 'PowerDNS') $config['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? '';
+    if ($config['provider'] === 'Bind') $config['bindip'] = $vars['bind_powerdns_api_ip'] ?? '';
+    for ($i = 1; $i <= 5; $i++) {
+        if (!empty($vars['ns' . $i])) $config['ns' . $i] = $vars['ns' . $i];
+    }
+    return $config;
+}
+
 /**
  * Client area page
  */
@@ -214,6 +244,8 @@ function whmcs_dns_clientarea($vars)
 
     $provider = $vars['provider'] ?? '';
     $apikey   = $vars['apikey'] ?? '';
+    $zoneLimit = max(0, (int)($vars['max_zones_per_client'] ?? 0));
+    $zoneCount = Capsule::table(WHMCSDNS_TABLE_ZONES)->where('client_id', $clientId)->count();
 
     // List user WHMCS domains
     $clientDomains = Capsule::table('tbldomains')
@@ -275,25 +307,13 @@ function whmcs_dns_clientarea($vars)
                         if ($zone) {
                             $message = ['type' => 'success', 'text' => 'DNS is already enabled for this domain.'];
                         } else {
-                            $cfg = [
-                                'domain_name' => $domainName,
-                                'provider'    => $provider,
-                                'apikey'      => $apikey,
-                            ];
-
-                            if ($provider === 'PowerDNS') {
-                                $cfg['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? null;
-                                for ($i = 1; $i <= 5; $i++) {
-                                    $k = 'ns' . $i;
-                                    if (!empty($vars[$k])) $cfg[$k] = $vars[$k];
-                                }
-                            } elseif ($provider === 'Bind') {
-                                $cfg['bindip'] = $vars['bind_powerdns_api_ip'] ?? null;
-                                for ($i = 1; $i <= 5; $i++) {
-                                    $k = 'ns' . $i;
-                                    if (!empty($vars[$k])) $cfg[$k] = $vars[$k];
-                                }
+                            if (Capsule::table(WHMCSDNS_TABLE_ZONES)->where('domain_name', $domainName)->exists()) {
+                                throw new RuntimeException('This DNS zone is already managed by another client.');
                             }
+                            if ($zoneLimit > 0 && $zoneCount >= $zoneLimit) {
+                                throw new RuntimeException('DNS zone limit reached. Disable a zone or contact support.');
+                            }
+                            $cfg = whmcs_dns_provider_config($vars, $domainName);
 
                             $domainOrder = [
                                 'client_id' => $clientId,
@@ -315,6 +335,7 @@ function whmcs_dns_clientarea($vars)
                             }
 
                             $message = ['type' => 'success', 'text' => 'DNS enabled. Zone created.'];
+                            $zoneCount++;
                         }
                     }
 
@@ -328,25 +349,7 @@ function whmcs_dns_clientarea($vars)
                         if (!$zone) {
                             $message = ['type' => 'success', 'text' => 'DNS is already disabled (zone not found).'];
                         } else {
-                            $cfg = [
-                                'domain_name' => $domainName,
-                                'provider'    => $provider,
-                                'apikey'      => $apikey,
-                            ];
-
-                            if ($provider === 'PowerDNS') {
-                                $cfg['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? null;
-                                for ($i = 1; $i <= 5; $i++) {
-                                    $k = 'ns' . $i;
-                                    if (!empty($vars[$k])) $cfg[$k] = $vars[$k];
-                                }
-                            } elseif ($provider === 'Bind') {
-                                $cfg['bindip'] = $vars['bind_powerdns_api_ip'] ?? null;
-                                for ($i = 1; $i <= 5; $i++) {
-                                    $k = 'ns' . $i;
-                                    if (!empty($vars[$k])) $cfg[$k] = $vars[$k];
-                                }
-                            }
+                            $cfg = whmcs_dns_provider_config($vars, $domainName);
 
                             $plex->deleteDomain([
                                 'config' => json_encode($cfg, JSON_UNESCAPED_SLASHES),
@@ -356,6 +359,7 @@ function whmcs_dns_clientarea($vars)
                             Capsule::table(WHMCSDNS_TABLE_ZONES)->where('id', $zone->id)->delete();
 
                             $message = ['type' => 'success', 'text' => 'DNS disabled. Zone deleted.'];
+                            $zoneCount--;
                         }
                     }
 
@@ -419,7 +423,7 @@ function whmcs_dns_clientarea($vars)
                             }
                         }
 
-                        $plex->addRecord($req);
+                        $plex->addRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
 
                         $message = ['type' => 'success', 'text' => 'Record added.'];
                     }
@@ -509,7 +513,7 @@ function whmcs_dns_clientarea($vars)
                             }
                         }
 
-                        $plex->updateRecord($req);
+                        $plex->updateRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
 
                         $message = ['type' => 'success', 'text' => 'Record updated.'];
                     }
@@ -568,9 +572,26 @@ function whmcs_dns_clientarea($vars)
                             }
                         }
 
-                        $plex->delRecord($req);
+                        $plex->delRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
 
                         $message = ['type' => 'success', 'text' => 'Record deleted.'];
+                    }
+                    if ($action === 'enable_dnssec' || $action === 'disable_dnssec') {
+                        $zone = Capsule::table(WHMCSDNS_TABLE_ZONES)
+                            ->where('domain_name', $domainName)->where('client_id', $clientId)->first();
+                        if (!$zone) throw new RuntimeException('Enable DNS for this domain first.');
+                        $config = whmcs_dns_provider_config($vars, $domainName);
+                        if ((json_decode((string)$zone->config, true)['provider'] ?? '') !== $config['provider']) {
+                            throw new RuntimeException('DNS provider settings have changed. Contact support.');
+                        }
+                        $capabilities = $plex->getDNSSECCapabilities($config);
+                        $operation = $action === 'enable_dnssec' ? 'can_enable' : 'can_disable';
+                        if (!$capabilities['supported'] || !$capabilities[$operation]) {
+                            throw new RuntimeException('This provider does not support that DNSSEC action.');
+                        }
+                        if ($action === 'enable_dnssec') $plex->enableDNSSEC($config);
+                        else $plex->disableDNSSEC($config);
+                        $message = ['type' => 'success', 'text' => 'DNSSEC updated.'];
                     }
                 } catch (Throwable $e) {
                     $message = ['type' => 'error', 'text' => $e->getMessage()];
@@ -585,6 +606,8 @@ function whmcs_dns_clientarea($vars)
     // Fetch zone + records for selected domain
     $zoneData = null;
     $records = [];
+    $nameservers = [];
+    $dnssec = null;
 
     if ($selectedDomain !== '') {
         $zone = Capsule::table(WHMCSDNS_TABLE_ZONES)
@@ -619,6 +642,49 @@ function whmcs_dns_clientarea($vars)
                     ];
                 })
                 ->toArray();
+
+            $config = whmcs_dns_provider_config($vars, $selectedDomain);
+            for ($i = 1; $i <= 5; $i++) {
+                if (!empty($config['ns' . $i])) $nameservers[] = trim((string)$config['ns' . $i]);
+            }
+            if ($provider === 'Cloudflare') {
+                // Cloudflare assigns nameservers per zone, unlike the global NS settings.
+                $nameservers = [];
+                try {
+                    $details = (new \PlexDNS\Providers\Cloudflare($config))->getDomain($selectedDomain);
+                    $nameservers = array_values(array_filter($details['name_servers'] ?? [], 'is_string'));
+                } catch (Throwable $e) {
+                    $message = ['type' => 'error', 'text' => 'Could not load assigned nameservers: ' . $e->getMessage()];
+                }
+            }
+            try {
+                if ((json_decode((string)$zone->config, true)['provider'] ?? '') !== $provider) {
+                    throw new RuntimeException('DNS provider settings have changed. Contact support.');
+                }
+                $capabilities = $plex->getDNSSECCapabilities($config);
+                if ($capabilities['supported']) {
+                    $status = $plex->getDNSSECStatus($config);
+                    $ds = $status['ds'] ?? $plex->getDSRecords($config);
+                    if (!is_array($ds)) $ds = $ds ? [$ds] : [];
+                    elseif ($ds && !array_is_list($ds)) $ds = [$ds];
+                    $dnssec = array_merge($capabilities, [
+                        'enabled' => (bool)($status['enabled'] ?? $capabilities['enforced']),
+                        'ds' => array_map(static function ($record) {
+                            if (is_string($record)) return $record;
+                            if (!is_array($record)) return '';
+                            $parts = [
+                                $record['key_tag'] ?? $record['keytag'] ?? $record['keyTag'] ?? '',
+                                $record['algorithm'] ?? '',
+                                $record['digest_type'] ?? $record['digestType'] ?? '',
+                                $record['digest'] ?? '',
+                            ];
+                            return in_array('', $parts, true) ? json_encode($record, JSON_UNESCAPED_SLASHES) : implode(' ', $parts);
+                        }, $ds),
+                    ]);
+                }
+            } catch (Throwable $e) {
+                $message = ['type' => 'error', 'text' => 'DNSSEC status unavailable: ' . $e->getMessage()];
+            }
         }
     }
 
@@ -652,6 +718,10 @@ function whmcs_dns_clientarea($vars)
             'selectedDomain' => $selectedDomain,
             'zone'           => $zoneData,
             'records'        => $records,
+            'nameservers'    => $nameservers,
+            'dnssec'         => $dnssec,
+            'zoneLimit'      => $zoneLimit,
+            'zoneCount'      => $zoneCount,
         ],
     ];
 }

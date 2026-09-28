@@ -8,20 +8,20 @@ DNS hosting module for WHMCS
 
 ## Supported Providers
 
-Most DNS providers **require an API key**, while some may need **additional settings** such as authentication credentials or specific server configurations. All required values must be set in the `.env` file.
+Most DNS providers **require an API key**, while some need additional credentials or server settings. Configure them in the WHMCS addon settings.
 
 | Provider    | Credentials in .env | Requirements  | Status | DNSSEC |
 |------------|---------------------|------------|---------------------|---------------------|
 | **AnycastDNS** | `API_KEY` | | ✅ | ❌ |
 | **Bind9** | `API_KEY:BIND_IP` | [bind9-api-server](https://github.com/getnamingo/bind9-api-server)/[bind9-api-server-sqlite](https://github.com/getnamingo/bind9-api-server-sqlite) | ✅ | 🚧 |
 | **Bunny** | `API_KEY` | | ✅ | ✅ |
-| **Cloudflare** | `EMAIL:API_KEY` or `API_TOKEN` | | ✅ | ❌ |
+| **Cloudflare** | `EMAIL:API_KEY` or `API_TOKEN` | | ✅ | ✅ |
 | **ClouDNS** | `AUTH_ID:AUTH_PASSWORD` | | ✅ | ✅ |
 | **Desec** | `API_KEY` | | ✅ | ✅ |
-| **DNSimple** | `API_KEY` | | ✅ | ❌ |
-| **Hetzner** | `API_KEY` | | 🚧 | ❌ |
+| **DNSimple** | `API_KEY` | | ✅ | ✅ |
+| **Hetzner** | `API_KEY` | | ✅ | ❌ |
 | **PowerDNS** | `API_KEY:POWERDNS_IP` | gmysql-dnssec=yes in pdns.conf | ✅ | ✅ |
-| **Vultr** | `API_KEY` | | ✅ | ❌ |
+| **Vultr** | `API_KEY` | | ✅ | ✅ |
 
 ## WHMCS Module Installation instructions
 
@@ -62,6 +62,10 @@ After activating the addon, configure the module settings in **WHMCS → System 
 - **Nameservers (NS1–NS5)**  
   Nameservers that clients should point their domains to when using this DNS service.
 
+- **Maximum Zones Per Client**: Set a positive number to cap manually enabled zones per client; `0` allows unlimited zones. Existing zones continue to work if the limit is later reduced.
+
+For ClouDNS, also set **ClouDNS Auth ID** and **ClouDNS Auth Password**. The module requires PlexDNS 1.0.15 or later in the 1.x series for DNSSEC status and DS records.
+
 Click **Save Changes** to apply the configuration.
 
 ### 5. Usage (Client Area)
@@ -71,6 +75,8 @@ Click **Save Changes** to apply the configuration.
 - DNS zones are **not created automatically**.
 - Clients must explicitly click **“Enable DNS”** to create a DNS zone.
 - Once enabled, DNS records can be **added, edited, or deleted**.
+- The DNS Manager domain menu shows domains from the client's WHMCS account. The zone settings cards show nameservers and, where supported, DNSSEC status and DS records. Cloudflare's nameservers are fetched for each zone.
+- Remove DS records at the registrar before disabling DNSSEC, or the domain may stop resolving.
 - Clicking **“Disable DNS”** removes (deletes) the DNS zone from the provider.
 
 ## WHMCS Module Update instructions

@@ -16,6 +16,7 @@
 <div class="d-flex align-items-center mb-3">
     <div class="col">
         <h2 class="mb-0">DNS Manager</h2>
+        <small class="text-muted">{$zoneCount} zone{if $zoneCount != 1}s{/if}{if $zoneLimit} / {$zoneLimit} allowed{/if}</small>
     </div>
 
     <div class="col-auto ms-auto">
@@ -30,7 +31,7 @@
                     Disable DNS
                 </button>
             </form>
-        {else}
+        {elseif $selectedDomain && (!$zoneLimit || $zoneCount < $zoneLimit)}
             <form method="post"
                   action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}"
                   class="m-0">
@@ -44,9 +45,24 @@
     </div>
 </div>
 
+{if $clientDomains}
+    <form method="get" action="index.php" class="mb-3">
+        <input type="hidden" name="m" value="whmcs_dns" />
+        <label for="dns-domain">Choose a domain</label>
+        <select name="domain" id="dns-domain" class="form-control" onchange="this.form.submit()">
+            <option value="">Select a domain</option>
+            {foreach $clientDomains as $domain}
+                <option value="{$domain.domain|escape}" {if $selectedDomain == $domain.domain}selected{/if}>{$domain.domain|escape}</option>
+            {/foreach}
+        </select>
+    </form>
+{/if}
+
 {if !$zone}
     <div class="alert alert-info mb-3">
-        DNS is not enabled for this domain yet. Click <b>Enable DNS</b> to create the zone.
+        {if !$selectedDomain}Choose a domain to manage its DNS.
+        {elseif $zoneLimit && $zoneCount >= $zoneLimit}Your DNS zone limit has been reached. Disable another zone or contact support.
+        {else}DNS is not enabled for this domain yet. Click <b>Enable DNS</b> to create the zone.{/if}
     </div>
 {/if}
 
@@ -75,7 +91,6 @@
                         <option value="MX">MX</option>
                         <option value="TXT">TXT</option>
                         <option value="SPF">SPF</option>
-                        <option value="DS">DS</option>
                     </select>
                 </div>
 
@@ -220,6 +235,61 @@
                 {/if}
                 </tbody>
             </table>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="h5 mb-0">Nameservers</h3></div>
+                    <div class="card-body">
+                        <p>Set these nameservers at your domain registrar:</p>
+                        {if $nameservers}
+                            {foreach $nameservers as $ns}
+                                <div class="d-flex align-items-center mb-2" style="gap:.5rem;">
+                                    <code class="text-break">{$ns|escape}</code>
+                                    <button type="button" class="btn btn-default btn-sm" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">Copy</button>
+                                </div>
+                            {/foreach}
+                        {else}
+                            <p class="text-muted">No nameservers available. Contact support.</p>
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="h5 mb-0">DNSSEC {if $dnssec}· {if $dnssec.enabled}Enabled{else}Disabled{/if}{/if}</h3></div>
+                    <div class="card-body">
+                        {if !$dnssec}
+                            <p class="text-muted">DNSSEC status is not available for this provider.</p>
+                        {else}
+                            {if $dnssec.enforced}<p>This provider manages DNSSEC automatically.</p>{/if}
+                            {if $dnssec.ds}
+                                <p>Publish these DS records at your domain registrar:</p>
+                                {foreach $dnssec.ds as $ds}
+                                    <div class="d-flex align-items-center mb-2" style="gap:.5rem;">
+                                        <code class="text-break">{$ds|escape}</code>
+                                        <button type="button" class="btn btn-default btn-sm" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">Copy</button>
+                                    </div>
+                                {/foreach}
+                            {/if}
+                            {if !$dnssec.enabled && $dnssec.can_enable}
+                                <form method="post" action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}">
+                                    <input type="hidden" name="action" value="enable_dnssec" />
+                                    <input type="hidden" name="domain_name" value="{$zone.domain_name|escape}" />
+                                    <button type="submit" class="btn btn-outline-success">Enable DNSSEC</button>
+                                </form>
+                            {elseif $dnssec.enabled && $dnssec.can_disable}
+                                <form method="post" action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}"
+                                      onsubmit="return confirm('Remove DS records at your registrar before disabling DNSSEC, or the domain may stop resolving. Continue?');">
+                                    <input type="hidden" name="action" value="disable_dnssec" />
+                                    <input type="hidden" name="domain_name" value="{$zone.domain_name|escape}" />
+                                    <button type="submit" class="btn btn-outline-danger">Disable DNSSEC</button>
+                                </form>
+                            {/if}
+                        {/if}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
