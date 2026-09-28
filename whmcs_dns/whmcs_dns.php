@@ -364,7 +364,16 @@ function whmcs_dns_clientarea($vars)
                     }
 
                     if ($action === 'add_record') {
-                        $recordName  = (string)($_POST['record_name'] ?? '');
+                        $recordName = strtolower(trim((string)($_POST['record_name'] ?? '')));
+                        if ($recordName === '@' || rtrim($recordName, '.') === $domainName) {
+                            $recordName = '';
+                        }
+                        if (str_ends_with($recordName, '.' . $domainName . '.')) {
+                            $recordName = substr($recordName, 0, -strlen($domainName) - 2);
+                        }
+                        if (str_ends_with($recordName, '.' . $domainName)) {
+                            $recordName = substr($recordName, 0, -strlen($domainName) - 1);
+                        }
                         $recordType  = strtoupper((string)($_POST['record_type'] ?? ''));
                         $recordValue = (string)($_POST['record_value'] ?? '');
                         $ttl         = isset($_POST['record_ttl']) ? (int)$_POST['record_ttl'] : 3600;
@@ -430,7 +439,6 @@ function whmcs_dns_clientarea($vars)
 
                     if ($action === 'update_record') {
                         $rowId      = (int)($_POST['row_id'] ?? 0);
-                        $recordName  = (string)($_POST['record_name'] ?? '');
                         $recordType  = strtoupper((string)($_POST['record_type'] ?? ''));
                         $recordValue = (string)($_POST['record_value'] ?? '');
                         $ttl         = isset($_POST['record_ttl']) ? (int)$_POST['record_ttl'] : 3600;
@@ -486,10 +494,21 @@ function whmcs_dns_clientarea($vars)
                             throw new Exception('DNS is not enabled for this domain. Click "Enable DNS" first.');
                         }
 
+                        $recordName = strtolower(trim((string)$rec->host));
+                        if ($recordName === '@' || rtrim($recordName, '.') === $domainName) {
+                            $recordName = '';
+                        }
+                        if (str_ends_with($recordName, '.' . $domainName . '.')) {
+                            $recordName = substr($recordName, 0, -strlen($domainName) - 2);
+                        }
+                        if (str_ends_with($recordName, '.' . $domainName)) {
+                            $recordName = substr($recordName, 0, -strlen($domainName) - 1);
+                        }
+
                         $req = [
                             'domain_name'      => $domainName,
                             'record_id'        => $rowId,
-                            'record_name'      => (string)$rec->host,
+                            'record_name'      => $recordName,
                             'record_type'      => strtoupper((string)$rec->type),
                             'record_value'     => $recordValue,
                             'old_value'        => (string)$rec->value,
@@ -664,7 +683,10 @@ function whmcs_dns_clientarea($vars)
                 $capabilities = $plex->getDNSSECCapabilities($config);
                 if ($capabilities['supported']) {
                     $status = $plex->getDNSSECStatus($config);
-                    $ds = $status['ds'] ?? $plex->getDSRecords($config);
+                    $ds = $status['ds'] ?? null;
+                    if ($ds === null || $ds === []) {
+                        $ds = $plex->getDSRecords($config);
+                    }
                     if (!is_array($ds)) $ds = $ds ? [$ds] : [];
                     elseif ($ds && !array_is_list($ds)) $ds = [$ds];
                     $dnssec = array_merge($capabilities, [

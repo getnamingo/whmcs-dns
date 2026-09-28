@@ -301,5 +301,19 @@ function whmcsDnsConfirmDelete(btn) {
         form.submit();
     }
 }
+
+{if $dnssec && $dnssec.enabled && !$dnssec.ds}
+var dnssecRetries = parseInt(sessionStorage.getItem('whmcsdns-dnssec-retries') || '0', 10);
+if (dnssecRetries < 10) {
+    sessionStorage.setItem('whmcsdns-dnssec-retries', String(dnssecRetries + 1));
+    setTimeout(function () {
+        window.location.reload();
+    }, 3000);
+} else {
+    sessionStorage.removeItem('whmcsdns-dnssec-retries');
+}
+{else}
+sessionStorage.removeItem('whmcsdns-dnssec-retries');
+{/if}
 </script>
 {/if}
