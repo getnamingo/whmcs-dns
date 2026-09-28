@@ -140,7 +140,7 @@
                 {else}
                     {foreach $records as $r}
                         <tr>
-                            <td><strong>{$r.host|escape}</strong></td>
+                            <td><strong>{if $r.host}{$r.host|escape}{else}@{/if}</strong></td>
 
                             <td>
                                 {assign var="dns_type" value=$r.type|upper}
