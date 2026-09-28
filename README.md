@@ -13,7 +13,7 @@ Most DNS providers **require an API key**, while some need additional credential
 | Provider    | Credentials in .env | Requirements  | Status | DNSSEC |
 |------------|---------------------|------------|---------------------|---------------------|
 | **AnycastDNS** | `API_KEY` | | ✅ | ❌ |
-| **Bind9** | `API_KEY:BIND_IP` | [bind9-api-server](https://github.com/getnamingo/bind9-api-server)/[bind9-api-server-sqlite](https://github.com/getnamingo/bind9-api-server-sqlite) | ✅ | 🚧 |
+| **Bind9** | `API_KEY:BIND_IP` | [bind9-api](https://github.com/getnamingo/bind9-api) | ✅ | 🚧 |
 | **Bunny** | `API_KEY` | | ✅ | ✅ |
 | **Cloudflare** | `EMAIL:API_KEY` or `API_TOKEN` | | ✅ | ✅ |
 | **ClouDNS** | `AUTH_ID:AUTH_PASSWORD` | | ✅ | ✅ |
@@ -39,11 +39,11 @@ Most DNS providers **require an API key**, while some need additional credential
 3. Locate **DNS Hosting** in the list.
 4. Click **Activate**.
 
-### (BIND9 Module only) 3. Installation of BIND9 API Server:
+### (BIND9 Module only) 3. Installation of BIND9 API:
 
-To use the BIND9 module, you must install the [bind9-api-server](https://github.com/getnamingo/bind9-api-server) on your master BIND server. This API server allows for seamless integration and management of your DNS zones via API.
+To use the BIND9 module, you must install the [bind9-api](https://github.com/getnamingo/bind9-api) on your master BIND server. This API allows for seamless integration and management of your DNS zones via API.
 
-Make sure to configure the API server according to your BIND installation parameters to ensure proper synchronization of your DNS zones.
+Make sure to configure the API according to your BIND installation parameters to ensure proper synchronization of your DNS zones.
 
 ### 4. Configure the Addon
 
@@ -64,7 +64,7 @@ After activating the addon, configure the module settings in **WHMCS → System 
 
 - **Maximum Zones Per Client**: Set a positive number to cap manually enabled zones per client; `0` allows unlimited zones. Existing zones continue to work if the limit is later reduced.
 
-For ClouDNS, also set **ClouDNS Auth ID** and **ClouDNS Auth Password**. The module requires PlexDNS 1.0.15 or later in the 1.x series for DNSSEC status and DS records.
+For ClouDNS, also set **ClouDNS Auth ID** and **ClouDNS Auth Password**.
 
 Click **Save Changes** to apply the configuration.
 
