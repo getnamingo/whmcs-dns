@@ -135,7 +135,7 @@
                 <tbody id="recordsTableBody">
                 {if !$records}
                     <tr>
-                        <td colspan="6">No DNS records found.</td>
+                        <td colspan="5">No DNS records found.</td>
                     </tr>
                 {else}
                     {foreach $records as $r}
