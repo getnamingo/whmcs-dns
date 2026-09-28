@@ -684,7 +684,7 @@ function whmcs_dns_clientarea($vars)
                 if ($capabilities['supported']) {
                     $status = $plex->getDNSSECStatus($config);
                     $ds = $status['ds'] ?? null;
-                    if ($ds === null || $ds === []) {
+                    if (($status['enabled'] ?? $capabilities['enforced']) && ($ds === null || $ds === [])) {
                         $ds = $plex->getDSRecords($config);
                     }
                     if (!is_array($ds)) $ds = $ds ? [$ds] : [];
