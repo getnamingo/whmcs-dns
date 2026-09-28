@@ -1,5 +1,3 @@
-{* modules/addons/whmcs_dns/templates/clientarea.tpl *}
-
 {if $message}
     <div class="alert alert-{if $message.type=='success'}success{else}danger{/if} mb-3" role="alert" style="position:relative;padding-right:3rem;">
         {$message.text|escape}
@@ -95,29 +93,28 @@
                 </div>
 
                 <div class="col-md-2">
-                    <input type="text" class="form-control" placeholder="example." name="record_name" required>
+                    <input type="text" class="form-control" placeholder="www or @" name="record_name" required>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <input type="text" class="form-control" placeholder="127.0.0.1" name="record_value" required>
                 </div>
 
-                <div class="col-sm">
+                <div class="col-auto" style="max-width: 100px;">
                     <input type="number" class="form-control" placeholder="TTL" name="record_ttl" value="3600" required>
                 </div>
 
-                <div class="col-sm">
-                    <input type="number" class="form-control" placeholder="Priority" name="record_priority">
+                <div class="col-auto" style="max-width: 150px;">
+                    <input type="number" class="form-control" placeholder="MX Priority" name="record_priority">
                 </div>
 
                 <div class="col-md-auto d-flex align-items-end">
-                    <button class="btn btn-outline-primary" type="submit" title="Add Record" style="display:flex;gap:6px;align-items:center;">
+                    <button class="btn btn-outline-success btn-icon" type="submit" title="Add Record" style="display:flex;gap:6px;align-items:center;">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M12 5l0 14" />
                             <path d="M5 12l14 0" />
                         </svg>
-                        Add
                     </button>
                 </div>
             </div>
@@ -127,12 +124,11 @@
             <table class="table table-striped table-bordered text-nowrap">
                 <thead>
                     <tr>
-                        <th scope="col" style="width:110px;">Type</th>
-                        <th scope="col" style="width:220px;">Name</th>
-                        <th scope="col">Value</th>
-                        <th scope="col" style="width:110px;">TTL</th>
-                        <th scope="col" style="width:110px;">Priority</th>
-                        <th scope="col" style="width:170px;">Actions</th>
+                        <th scope="col" class="w-25">Name</th>
+                        <th scope="col" class="w-1">Type</th>
+                        <th scope="col" class="w-15">TTL</th>
+                        <th scope="col" class="w-50">Value</th>
+                        <th scope="col" class="w-1">Actions</th>
                     </tr>
                 </thead>
 
@@ -144,6 +140,8 @@
                 {else}
                     {foreach $records as $r}
                         <tr>
+                            <td><strong>{$r.host|escape}</strong></td>
+
                             <td>
                                 {assign var="dns_type" value=$r.type|upper}
                                 {if $dns_type == 'A'}
@@ -169,46 +167,47 @@
                                 </span>
                             </td>
 
-                            <td><strong>{$r.host|escape}</strong></td>
+                            <td style="min-width:100px;">
+                                    <input type="number" class="form-control" placeholder="600"
+                                           name="record_ttl" value="{if $r.ttl}{$r.ttl}{else}600{/if}" required />
+                            </td>
 
                             <td style="min-width:240px;">
                                 <form class="whmcsdns-update-form m-0" method="post"
                                       action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}">
+
                                     <input type="hidden" name="action" value="update_record" />
                                     <input type="hidden" name="domain_name" value="{$zone.domain_name|escape}" />
                                     <input type="hidden" name="row_id" value="{$r.id}" />
                                     <input type="hidden" name="old_value" value="{$r.value|escape}" />
                                     <input type="hidden" name="record_type" value="{$r.type|escape}" />
                                     <input type="hidden" name="record_name" value="{$r.host|escape}" />
+                                    <input type="hidden" name="record_priority" value="{$r.priority|escape}" />
 
-                                    <input type="text" class="form-control" placeholder="127.0.0.1"
-                                           name="record_value" value="{$r.value|escape}" required />
-                            </td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {if $dns_type == 'MX'}
+                                            <span class="badge badge-light mr-2">
+                                                {$r.priority|escape}
+                                            </span>
+                                        {/if}
 
-                            <td>
-                                    <input type="number" class="form-control" placeholder="600"
-                                           name="record_ttl" value="{if $r.ttl}{$r.ttl}{else}600{/if}" required />
-                            </td>
-
-                            <td>
-                                    {if $dns_type == 'MX'}
-                                        <input type="number" class="form-control" placeholder="Priority"
-                                               name="record_priority" value="{$r.priority|escape}" />
-                                    {else}
-                                        <input type="number" class="form-control" placeholder="-"
-                                               name="record_priority" value="" />
-                                    {/if}
+                                        <input type="text"
+                                               class="form-control"
+                                               placeholder="127.0.0.1"
+                                               name="record_value"
+                                               value="{$r.value|escape}"
+                                               required />
+                                    </div>
                             </td>
 
                             <td class="text-end" style="white-space:nowrap;">
-                                    <button type="submit" class="btn btn-outline-primary btn-sm" title="Update Record" style="display:inline-flex;align-items:center;gap:6px;">
+                                    <button type="submit" class="btn btn-outline-info btn-icon" title="Update Record" style="display:inline-flex;align-items:center;gap:6px;">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                             <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
                                             <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
                                             <path d="M16 5l3 3" />
                                         </svg>
-                                        Update
                                     </button>
                                 </form>
 
@@ -218,7 +217,7 @@
                                     <input type="hidden" name="domain_name" value="{$zone.domain_name|escape}" />
                                     <input type="hidden" name="row_id" value="{$r.id}" />
 
-                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                    <button type="button" class="btn btn-outline-danger btn-icon"
                                             title="Delete Record" onclick="whmcsDnsConfirmDelete(this);"
                                             style="display:inline-flex;align-items:center;gap:6px;">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -226,7 +225,6 @@
                                             <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
                                             <path d="M10 10l4 4m0 -4l-4 4" />
                                         </svg>
-                                        Delete
                                     </button>
                                 </form>
                             </td>
@@ -246,7 +244,7 @@
                             {foreach $nameservers as $ns}
                                 <div class="d-flex align-items-center mb-2" style="gap:.5rem;">
                                     <code class="text-break">{$ns|escape}</code>
-                                    <button type="button" class="btn btn-default btn-sm" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">Copy</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-icon" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)" style="flex-shrink:0;" title="Copy"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg></button>
                                 </div>
                             {/foreach}
                         {else}
@@ -268,7 +266,7 @@
                                 {foreach $dnssec.ds as $ds}
                                     <div class="d-flex align-items-center mb-2" style="gap:.5rem;">
                                         <code class="text-break">{$ds|escape}</code>
-                                        <button type="button" class="btn btn-default btn-sm" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">Copy</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-icon" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)" style="flex-shrink:0;" title="Copy"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666" /><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" /></svg></button>
                                     </div>
                                 {/foreach}
                             {/if}
