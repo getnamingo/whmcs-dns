@@ -71,7 +71,7 @@ The Composer package name remains `namingo/plexdns` for backward compatibility, 
 - Once enabled, DNS records can be **added, edited, or deleted**.
 - The DNS Manager domain menu shows domains from the client's WHMCS account. The zone settings cards show nameservers and, where supported, DNSSEC status and DS records. Cloudflare's nameservers are fetched for each zone.
 - Remove DS records at the registrar before disabling DNSSEC, or the domain may stop resolving.
-- Clicking **“Disable DNS”** removes the DNS zone from providers that expose zone deletion. Gandi LiveDNS zones cannot be removed through its Cardo DNS provider API. Scaleway managed root zones also cannot be deleted independently, but Scaleway child zones are deletable when **Scaleway Parent Domain** is configured. WHMCS only offers **Disable DNS** when the selected zone is safely deletable.
+- Clicking **“Disable DNS”** removes the DNS zone from providers that expose zone deletion. Gandi LiveDNS zones cannot be removed through its Cardo DNS provider API. Scaleway managed root zones also cannot be deleted independently, but Scaleway child zones are deletable when **Scaleway Parent Domain** was configured for that zone when it was enabled. WHMCS uses the zone's persisted parent/project structure for deletion safety, while current credentials can still be rotated.
 
 ## WHMCS Module Upgrade instructions
 

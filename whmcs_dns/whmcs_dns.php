@@ -233,27 +233,53 @@ function whmcs_dns_output($vars)
     </div>';
 }
 
-function whmcs_dns_can_delete_zone(string $provider, string $domainName, array $vars): bool
+function whmcs_dns_can_delete_zone(string $domainName, array $zoneConfig): bool
 {
+    $provider = (string)($zoneConfig['provider'] ?? '');
+
     if ($provider === 'GandiLiveDNS') {
         return false;
     }
 
     if ($provider !== 'Scaleway') {
-        return true;
+        return $provider !== '';
     }
 
     $zone = strtolower(rtrim(trim($domainName), '.'));
-    $parent = strtolower(rtrim(trim((string)($vars['scaleway_parent_domain'] ?? '')), '.'));
+    $parent = strtolower(rtrim(trim((string)($zoneConfig['parent_domain'] ?? '')), '.'));
 
     if ($zone === '' || $parent === '') {
-        // Without an explicit parent we cannot distinguish a managed root zone
-        // from a deletable child zone in the WHMCS UI. Cardo will still enforce
-        // the provider-side restriction if a request reaches it.
+        // The persisted zone configuration is authoritative. Without a saved
+        // parent, treat the Scaleway zone as an undeletable managed root/unknown
+        // rather than guessing from today's global module settings.
         return false;
     }
 
     return $zone !== $parent && str_ends_with($zone, '.' . $parent);
+}
+
+function whmcs_dns_deletion_config(array $vars, string $domainName, array $zoneConfig): array
+{
+    $config = whmcs_dns_provider_config($vars, $domainName);
+    $storedProvider = (string)($zoneConfig['provider'] ?? '');
+
+    if ($storedProvider === '' || $storedProvider !== (string)($config['provider'] ?? '')) {
+        throw new RuntimeException('DNS provider settings have changed. Contact support.');
+    }
+
+    // Keep current credentials, but preserve the structural provider identity
+    // used when this zone was provisioned.
+    $config['provider'] = $storedProvider;
+
+    if ($storedProvider === 'Scaleway') {
+        foreach (['project_id', 'parent_domain'] as $key) {
+            if (array_key_exists($key, $zoneConfig)) {
+                $config[$key] = $zoneConfig[$key];
+            }
+        }
+    }
+
+    return $config;
 }
 
 function whmcs_dns_provider_config(array $vars, string $domainName): array
@@ -395,14 +421,6 @@ function whmcs_dns_clientarea($vars)
                     }
 
                     if ($action === 'disable_dns') {
-                        if (!whmcs_dns_can_delete_zone($provider, $domainName, $vars)) {
-                            throw new RuntimeException(
-                                'This DNS zone cannot be deleted through Cardo DNS. '
-                                . 'Gandi LiveDNS does not expose zone removal, and Scaleway managed root zones '
-                                . 'cannot be deleted independently. The zone has not been removed locally or remotely.'
-                            );
-                        }
-
                         // Delete zone explicitly
                         $zone = Capsule::table(WHMCSDNS_TABLE_ZONES)
                             ->where('domain_name', $domainName)
@@ -412,7 +430,20 @@ function whmcs_dns_clientarea($vars)
                         if (!$zone) {
                             $message = ['type' => 'success', 'text' => 'DNS is already disabled (zone not found).'];
                         } else {
-                            $cfg = whmcs_dns_provider_config($vars, $domainName);
+                            $zoneConfig = json_decode((string)$zone->config, true);
+                            if (!is_array($zoneConfig)) {
+                                throw new RuntimeException('Stored DNS zone configuration is invalid.');
+                            }
+
+                            if (!whmcs_dns_can_delete_zone($domainName, $zoneConfig)) {
+                                throw new RuntimeException(
+                                    'This DNS zone cannot be deleted through Cardo DNS. '
+                                    . 'Gandi LiveDNS does not expose zone removal, and Scaleway managed root zones '
+                                    . 'cannot be deleted independently. The zone has not been removed locally or remotely.'
+                                );
+                            }
+
+                            $cfg = whmcs_dns_deletion_config($vars, $domainName, $zoneConfig);
 
                             $cardo->deleteDomain([
                                 'config' => json_encode($cfg, JSON_UNESCAPED_SLASHES),
@@ -698,12 +729,17 @@ function whmcs_dns_clientarea($vars)
             ->first();
 
         if ($zone) {
+            $persistedZoneConfig = json_decode((string)$zone->config, true);
+            if (!is_array($persistedZoneConfig)) {
+                $persistedZoneConfig = [];
+            }
+
             $zoneData = [
                 'id'          => (int)$zone->id,
                 'domain_name' => (string)$zone->domain_name,
                 'created_at'  => (string)$zone->created_at,
                 'updated_at'  => (string)$zone->updated_at,
-                'config'      => json_decode((string)$zone->config, true),
+                'config'      => $persistedZoneConfig,
             ];
 
             $records = Capsule::table(WHMCSDNS_TABLE_RECORDS)
@@ -808,7 +844,9 @@ function whmcs_dns_clientarea($vars)
             'zoneLimit'      => $zoneLimit,
             'zoneCount'      => $zoneCount,
             'provider'       => $provider,
-            'canDisableZone' => whmcs_dns_can_delete_zone($provider, $selectedDomain, $vars),
+            'canDisableZone' => $zoneData !== null
+                ? whmcs_dns_can_delete_zone($selectedDomain, $zoneData['config'] ?? [])
+                : false,
         ],
     ];
 }
