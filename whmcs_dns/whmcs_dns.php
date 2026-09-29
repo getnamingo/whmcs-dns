@@ -233,6 +233,29 @@ function whmcs_dns_output($vars)
     </div>';
 }
 
+function whmcs_dns_can_delete_zone(string $provider, string $domainName, array $vars): bool
+{
+    if ($provider === 'GandiLiveDNS') {
+        return false;
+    }
+
+    if ($provider !== 'Scaleway') {
+        return true;
+    }
+
+    $zone = strtolower(rtrim(trim($domainName), '.'));
+    $parent = strtolower(rtrim(trim((string)($vars['scaleway_parent_domain'] ?? '')), '.'));
+
+    if ($zone === '' || $parent === '') {
+        // Without an explicit parent we cannot distinguish a managed root zone
+        // from a deletable child zone in the WHMCS UI. Cardo will still enforce
+        // the provider-side restriction if a request reaches it.
+        return false;
+    }
+
+    return $zone !== $parent && str_ends_with($zone, '.' . $parent);
+}
+
 function whmcs_dns_provider_config(array $vars, string $domainName): array
 {
     $config = [
@@ -372,10 +395,11 @@ function whmcs_dns_clientarea($vars)
                     }
 
                     if ($action === 'disable_dns') {
-                        if (in_array($provider, ['GandiLiveDNS', 'Scaleway'], true)) {
+                        if (!whmcs_dns_can_delete_zone($provider, $domainName, $vars)) {
                             throw new RuntimeException(
-                                'This provider does not support deleting the managed root DNS zone through Cardo DNS. '
-                                . 'The zone has not been removed locally or remotely.'
+                                'This DNS zone cannot be deleted through Cardo DNS. '
+                                . 'Gandi LiveDNS does not expose zone removal, and Scaleway managed root zones '
+                                . 'cannot be deleted independently. The zone has not been removed locally or remotely.'
                             );
                         }
 
@@ -784,7 +808,7 @@ function whmcs_dns_clientarea($vars)
             'zoneLimit'      => $zoneLimit,
             'zoneCount'      => $zoneCount,
             'provider'       => $provider,
-            'canDisableZone' => !in_array($provider, ['GandiLiveDNS', 'Scaleway'], true),
+            'canDisableZone' => whmcs_dns_can_delete_zone($provider, $selectedDomain, $vars),
         ],
     ];
 }
