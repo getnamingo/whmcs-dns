@@ -63,6 +63,11 @@ function whmcs_dns_config()
                 'Default'      => '',
                 'Description'  => "Enter your DNS provider's API key. Keep it confidential and ensure it's valid for requests.",
             ],
+            'anycast_server_id' => [
+                'FriendlyName' => 'AnycastDNS Server ID', 'Type' => 'text', 'Size' => '12',
+                'Default' => '0',
+                'Description' => 'Optional AnycastDNS server ID. Leave 0 unless your account requires a specific server.',
+            ],
             'cloudns_auth_id' => [
                 'FriendlyName' => 'ClouDNS Auth ID', 'Type' => 'text', 'Size' => '30',
                 'Description' => 'Required only for ClouDNS.',
@@ -234,6 +239,7 @@ function whmcs_dns_provider_config(array $vars, string $domainName): array
         'domain_name' => $domainName,
         'provider' => $vars['provider'] ?? '',
         'apikey' => $vars['apikey'] ?? '',
+        'serverid' => isset($vars['anycast_server_id']) ? (int)$vars['anycast_server_id'] : 0,
         'cloudns_auth_id' => $vars['cloudns_auth_id'] ?? '',
         'cloudns_auth_password' => $vars['cloudns_auth_password'] ?? '',
         'project_id' => $vars['scaleway_project_id'] ?? '',
@@ -366,6 +372,13 @@ function whmcs_dns_clientarea($vars)
                     }
 
                     if ($action === 'disable_dns') {
+                        if (in_array($provider, ['GandiLiveDNS', 'Scaleway'], true)) {
+                            throw new RuntimeException(
+                                'This provider does not support deleting the managed root DNS zone through Cardo DNS. '
+                                . 'The zone has not been removed locally or remotely.'
+                            );
+                        }
+
                         // Delete zone explicitly
                         $zone = Capsule::table(WHMCSDNS_TABLE_ZONES)
                             ->where('domain_name', $domainName)
@@ -770,6 +783,8 @@ function whmcs_dns_clientarea($vars)
             'dnssec'         => $dnssec,
             'zoneLimit'      => $zoneLimit,
             'zoneCount'      => $zoneCount,
+            'provider'       => $provider,
+            'canDisableZone' => !in_array($provider, ['GandiLiveDNS', 'Scaleway'], true),
         ],
     ];
 }
