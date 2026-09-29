@@ -54,6 +54,7 @@ After activating the addon, configure the module settings in **WHMCS → System 
 - **Maximum Zones Per Client**: Set a positive number to cap manually enabled zones per client; `0` allows unlimited zones. Existing zones continue to work if the limit is later reduced.
 
 Provider-specific settings:
+- **AnycastDNS:** **AnycastDNS Server ID** is optional and defaults to `0`.
 - **ClouDNS:** set **ClouDNS Auth ID** and **ClouDNS Auth Password**.
 - **Scaleway:** set **Scaleway Project ID**. **Scaleway Parent Domain** is optional and normally left empty for root-zone hosting.
 - **Gandi LiveDNS:** the regular **API Key** field is the token. **Gandi Sharing ID** is optional; **Bearer** authentication is recommended, with legacy **Apikey** available when needed.
@@ -72,7 +73,7 @@ The Composer package name remains `namingo/plexdns` for backward compatibility, 
 - Once enabled, DNS records can be **added, edited, or deleted**.
 - The DNS Manager domain menu shows domains from the client's WHMCS account. The zone settings cards show nameservers and, where supported, DNSSEC status and DS records. Cloudflare's nameservers are fetched for each zone.
 - Remove DS records at the registrar before disabling DNSSEC, or the domain may stop resolving.
-- Clicking **“Disable DNS”** removes (deletes) the DNS zone from the provider.
+- Clicking **“Disable DNS”** removes the DNS zone from providers that expose zone deletion. Gandi LiveDNS and Scaleway managed root zones cannot be deleted through their Cardo DNS provider APIs, so WHMCS keeps those zones intact and does not offer a misleading local-only disable action.
 
 ## WHMCS Module Update instructions
 
