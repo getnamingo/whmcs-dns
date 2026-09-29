@@ -8,9 +8,7 @@ DNS hosting module for WHMCS
 
 ## Supported Providers
 
-WHMCS DNS uses **Cardo DNS 1.1+** for provider integration. See the authoritative [Cardo DNS supported providers table](https://github.com/getnamingo/cardo-dns#supported-providers) for provider availability, credentials, requirements, and DNSSEC support.
-
-The WHMCS addon currently exposes DigitalOcean, Gandi LiveDNS, Scaleway, and all previously available Cardo DNS providers in its provider selector.
+WHMCS DNS uses **Cardo DNS** for provider integration. See the [Cardo DNS supported providers list](https://github.com/getnamingo/cardo-dns#supported-providers) for provider availability, credentials, requirements, and DNSSEC support.
 
 ## WHMCS Module Installation instructions
 
@@ -75,26 +73,26 @@ The Composer package name remains `namingo/plexdns` for backward compatibility, 
 - Remove DS records at the registrar before disabling DNSSEC, or the domain may stop resolving.
 - Clicking **“Disable DNS”** removes the DNS zone from providers that expose zone deletion. Gandi LiveDNS zones cannot be removed through its Cardo DNS provider API. Scaleway managed root zones also cannot be deleted independently, but Scaleway child zones are deletable when **Scaleway Parent Domain** is configured. WHMCS only offers **Disable DNS** when the selected zone is safely deletable.
 
-## WHMCS Module Update instructions
+## WHMCS Module Upgrade instructions
 
-To update the DNS hosting module to the latest version, download the newest release and replace the existing module files.
+To upgrade the DNS hosting module to the latest version, download the newest release and replace the existing module files.
 
-### Manual update
+### Manual upgrade
 
 1. Download the **latest release** archive from the repository.
 2. Extract the archive to a temporary directory.
 3. Locate the `whmcs_dns` directory inside the extracted release.
 4. Copy the `whmcs_dns` directory into `/modules/addons`, **overwriting** the existing `whmcs_dns` directory.
 
-### Update via console
+### Upgrade via console
 
 From your server:
 
 ```bash
 cd /tmp
-wget https://github.com/getnamingo/whmcs-dns/releases/download/v1.0.2/whmcs-dns-v1.0.2.tar.gz
-tar xzf whmcs-dns-v1.0.2.tar.gz
-cd whmcs-dns-v1.0.2
+wget https://github.com/getnamingo/whmcs-dns/releases/download/v1.0.3/whmcs-dns-v1.0.3.tar.gz
+tar xzf whmcs-dns-v1.0.3.tar.gz
+cd whmcs-dns-v1.0.3
 mv whmcs_dns /path/to/whmcs/modules/addons/whmcs_dns
 ```
 
