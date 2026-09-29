@@ -13,7 +13,7 @@ if (!defined("WHMCS")) {
 }
 
 use WHMCS\Database\Capsule;
-use PlexDNS\Service as PlexService;
+use Namingo\Cardo\DNS\Service as CardoService;
 
 define('WHMCSDNS_TABLE_ZONES', 'zones');
 define('WHMCSDNS_TABLE_RECORDS', 'records');
@@ -46,8 +46,11 @@ function whmcs_dns_config()
                     'ClouDNS'    => 'ClouDNS',
                     'Desec'     => 'Desec',
                     'DNSimple' => 'DNSimple',
+                    'DigitalOcean' => 'DigitalOcean',
+                    'GandiLiveDNS' => 'Gandi LiveDNS',
                     'Hetzner'    => 'Hetzner',
                     'PowerDNS'     => 'PowerDNS',
+                    'Scaleway' => 'Scaleway',
                     'Vultr' => 'Vultr',
                 ],
                 'Default'      => 'Vultr',
@@ -67,6 +70,25 @@ function whmcs_dns_config()
             'cloudns_auth_password' => [
                 'FriendlyName' => 'ClouDNS Auth Password', 'Type' => 'password', 'Size' => '30',
                 'Description' => 'Required only for ClouDNS.',
+            ],
+            'scaleway_project_id' => [
+                'FriendlyName' => 'Scaleway Project ID', 'Type' => 'text', 'Size' => '50',
+                'Description' => 'Required only for Scaleway.',
+            ],
+            'scaleway_parent_domain' => [
+                'FriendlyName' => 'Scaleway Parent Domain', 'Type' => 'text', 'Size' => '50',
+                'Description' => 'Optional. Usually leave empty for normal root-zone hosting.',
+            ],
+            'gandi_sharing_id' => [
+                'FriendlyName' => 'Gandi Sharing ID', 'Type' => 'text', 'Size' => '50',
+                'Description' => 'Optional Gandi organization sharing context.',
+            ],
+            'gandi_auth_scheme' => [
+                'FriendlyName' => 'Gandi Auth Scheme',
+                'Type' => 'dropdown',
+                'Options' => ['Bearer' => 'Bearer (recommended)', 'Apikey' => 'Apikey (legacy)'],
+                'Default' => 'Bearer',
+                'Description' => 'Bearer is recommended for current Gandi personal access tokens.',
             ],
             'max_zones_per_client' => [
                 'FriendlyName' => 'Maximum Zones Per Client', 'Type' => 'text', 'Size' => '8',
@@ -214,6 +236,10 @@ function whmcs_dns_provider_config(array $vars, string $domainName): array
         'apikey' => $vars['apikey'] ?? '',
         'cloudns_auth_id' => $vars['cloudns_auth_id'] ?? '',
         'cloudns_auth_password' => $vars['cloudns_auth_password'] ?? '',
+        'project_id' => $vars['scaleway_project_id'] ?? '',
+        'parent_domain' => $vars['scaleway_parent_domain'] ?? '',
+        'sharing_id' => $vars['gandi_sharing_id'] ?? '',
+        'auth_scheme' => $vars['gandi_auth_scheme'] ?? 'Bearer',
         'soa_email' => $vars['soa_email'] ?? '',
     ];
     if ($config['provider'] === 'PowerDNS') $config['powerdnsip'] = $vars['bind_powerdns_api_ip'] ?? '';
@@ -266,7 +292,7 @@ function whmcs_dns_clientarea($vars)
     $message = null;
 
     $pdo = Capsule::connection()->getPdo();
-    $plex = new PlexService($pdo);
+    $cardo = new CardoService($pdo);
 
     // Helper: fetch zone
     $getZone = function (string $domainName) use ($clientId) {
@@ -320,9 +346,9 @@ function whmcs_dns_clientarea($vars)
                                 'config'    => json_encode($cfg, JSON_UNESCAPED_SLASHES),
                             ];
 
-                            $plex->createDomain($domainOrder);
+                            $cardo->createDomain($domainOrder);
 
-                            // Ensure local row exists if PlexDNS didn't insert it itself
+                            // Ensure local row exists if Cardo DNS didn't insert it itself
                             $zone = Capsule::table(WHMCSDNS_TABLE_ZONES)->where('domain_name', $domainName)->first();
                             if (!$zone) {
                                 Capsule::table(WHMCSDNS_TABLE_ZONES)->insert([
@@ -351,7 +377,7 @@ function whmcs_dns_clientarea($vars)
                         } else {
                             $cfg = whmcs_dns_provider_config($vars, $domainName);
 
-                            $plex->deleteDomain([
+                            $cardo->deleteDomain([
                                 'config' => json_encode($cfg, JSON_UNESCAPED_SLASHES),
                             ]);
 
@@ -432,7 +458,7 @@ function whmcs_dns_clientarea($vars)
                             }
                         }
 
-                        $plex->addRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
+                        $cardo->addRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
 
                         $message = ['type' => 'success', 'text' => 'Record added.'];
                     }
@@ -532,7 +558,7 @@ function whmcs_dns_clientarea($vars)
                             }
                         }
 
-                        $plex->updateRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
+                        $cardo->updateRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
 
                         $message = ['type' => 'success', 'text' => 'Record updated.'];
                     }
@@ -591,7 +617,7 @@ function whmcs_dns_clientarea($vars)
                             }
                         }
 
-                        $plex->delRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
+                        $cardo->delRecord(array_merge(whmcs_dns_provider_config($vars, $domainName), $req));
 
                         $message = ['type' => 'success', 'text' => 'Record deleted.'];
                     }
@@ -603,13 +629,13 @@ function whmcs_dns_clientarea($vars)
                         if ((json_decode((string)$zone->config, true)['provider'] ?? '') !== $config['provider']) {
                             throw new RuntimeException('DNS provider settings have changed. Contact support.');
                         }
-                        $capabilities = $plex->getDNSSECCapabilities($config);
+                        $capabilities = $cardo->getDNSSECCapabilities($config);
                         $operation = $action === 'enable_dnssec' ? 'can_enable' : 'can_disable';
                         if (!$capabilities['supported'] || !$capabilities[$operation]) {
                             throw new RuntimeException('This provider does not support that DNSSEC action.');
                         }
-                        if ($action === 'enable_dnssec') $plex->enableDNSSEC($config);
-                        else $plex->disableDNSSEC($config);
+                        if ($action === 'enable_dnssec') $cardo->enableDNSSEC($config);
+                        else $cardo->disableDNSSEC($config);
                         $message = ['type' => 'success', 'text' => 'DNSSEC updated.'];
                     }
                 } catch (Throwable $e) {
@@ -670,7 +696,7 @@ function whmcs_dns_clientarea($vars)
                 // Cloudflare assigns nameservers per zone, unlike the global NS settings.
                 $nameservers = [];
                 try {
-                    $details = (new \PlexDNS\Providers\Cloudflare($config))->getDomain($selectedDomain);
+                    $details = (new \Namingo\Cardo\DNS\Providers\Cloudflare($config))->getDomain($selectedDomain);
                     $nameservers = array_values(array_filter($details['name_servers'] ?? [], 'is_string'));
                 } catch (Throwable $e) {
                     $message = ['type' => 'error', 'text' => 'Could not load assigned nameservers: ' . $e->getMessage()];
@@ -680,12 +706,12 @@ function whmcs_dns_clientarea($vars)
                 if ((json_decode((string)$zone->config, true)['provider'] ?? '') !== $provider) {
                     throw new RuntimeException('DNS provider settings have changed. Contact support.');
                 }
-                $capabilities = $plex->getDNSSECCapabilities($config);
+                $capabilities = $cardo->getDNSSECCapabilities($config);
                 if ($capabilities['supported']) {
-                    $status = $plex->getDNSSECStatus($config);
+                    $status = $cardo->getDNSSECStatus($config);
                     $ds = $status['ds'] ?? null;
                     if (($status['enabled'] ?? $capabilities['enforced']) && ($ds === null || $ds === [])) {
-                        $ds = $plex->getDSRecords($config);
+                        $ds = $cardo->getDSRecords($config);
                     }
                     if (!is_array($ds)) $ds = $ds ? [$ds] : [];
                     elseif ($ds && !array_is_list($ds)) $ds = [$ds];
