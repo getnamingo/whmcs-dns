@@ -8,20 +8,9 @@ DNS hosting module for WHMCS
 
 ## Supported Providers
 
-Most DNS providers **require an API key**, while some need additional credentials or server settings. Configure them in the WHMCS addon settings.
+WHMCS DNS uses **Cardo DNS 1.1+** for provider integration. See the authoritative [Cardo DNS supported providers table](https://github.com/getnamingo/cardo-dns#supported-providers) for provider availability, credentials, requirements, and DNSSEC support.
 
-| Provider    | Credentials in .env | Requirements  | Status | DNSSEC |
-|------------|---------------------|------------|---------------------|---------------------|
-| **AnycastDNS** | `API_KEY` | | ✅ | ❌ |
-| **Bind9** | `API_KEY:BIND_IP` | [bind9-api](https://github.com/getnamingo/bind9-api) | ✅ | 🚧 |
-| **Bunny** | `API_KEY` | | ✅ | ✅ |
-| **Cloudflare** | `EMAIL:API_KEY` or `API_TOKEN` | | ✅ | ✅ |
-| **ClouDNS** | `AUTH_ID:AUTH_PASSWORD` | | ✅ | ✅ |
-| **Desec** | `API_KEY` | | ✅ | ✅ |
-| **DNSimple** | `API_KEY` | | ✅ | ✅ |
-| **Hetzner** | `API_KEY` | | ✅ | ❌ |
-| **PowerDNS** | `API_KEY:POWERDNS_IP` | gmysql-dnssec=yes in pdns.conf | ✅ | ✅ |
-| **Vultr** | `API_KEY` | | ✅ | ✅ |
+The WHMCS addon currently exposes DigitalOcean, Gandi LiveDNS, Scaleway, and all previously available Cardo DNS providers in its provider selector.
 
 ## WHMCS Module Installation instructions
 
@@ -50,7 +39,7 @@ Make sure to configure the API according to your BIND installation parameters to
 After activating the addon, configure the module settings in **WHMCS → System Settings → Addons**:
 
 - **DNS Provider**  
-  Identifier of the PlexDNS-supported provider  
+  Identifier of the Cardo DNS-supported provider  
   *(e.g. `Desec`, `PowerDNS`, `Cloudflare`, etc.)*
 
 - **API Key**  
@@ -64,9 +53,16 @@ After activating the addon, configure the module settings in **WHMCS → System 
 
 - **Maximum Zones Per Client**: Set a positive number to cap manually enabled zones per client; `0` allows unlimited zones. Existing zones continue to work if the limit is later reduced.
 
-For ClouDNS, also set **ClouDNS Auth ID** and **ClouDNS Auth Password**.
+Provider-specific settings:
+- **AnycastDNS:** **AnycastDNS Server ID** is optional and defaults to `0`.
+- **ClouDNS:** set **ClouDNS Auth ID** and **ClouDNS Auth Password**.
+- **Scaleway:** set **Scaleway Project ID**. **Scaleway Parent Domain** is optional and normally left empty for root-zone hosting.
+- **Gandi LiveDNS:** the regular **API Key** field is the token. **Gandi Sharing ID** is optional; **Bearer** authentication is recommended, with legacy **Apikey** available when needed.
+- **DigitalOcean:** only the regular **API Key** field is required.
 
 Click **Save Changes** to apply the configuration.
+
+The Composer package name remains `namingo/plexdns` for backward compatibility, while the library namespace and project name are Cardo DNS. This module requires Cardo DNS `^1.1.0`.
 
 ### 5. Usage (Client Area)
 
@@ -77,7 +73,7 @@ Click **Save Changes** to apply the configuration.
 - Once enabled, DNS records can be **added, edited, or deleted**.
 - The DNS Manager domain menu shows domains from the client's WHMCS account. The zone settings cards show nameservers and, where supported, DNSSEC status and DS records. Cloudflare's nameservers are fetched for each zone.
 - Remove DS records at the registrar before disabling DNSSEC, or the domain may stop resolving.
-- Clicking **“Disable DNS”** removes (deletes) the DNS zone from the provider.
+- Clicking **“Disable DNS”** removes the DNS zone from providers that expose zone deletion. Gandi LiveDNS and Scaleway managed root zones cannot be deleted through their Cardo DNS provider APIs, so WHMCS keeps those zones intact and does not offer a misleading local-only disable action.
 
 ## WHMCS Module Update instructions
 

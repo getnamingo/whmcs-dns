@@ -14,7 +14,7 @@
       "Manage DNS zones and records from WHMCS",
       "Allow customers to manage DNS from the client area",
       "Enable or disable DNS hosting per domain with an optional per-client limit",
-      "Support multiple DNS providers through PlexDNS",
+      "Support multiple DNS providers through Cardo DNS",
       "Show nameservers and provider DNSSEC status with DS records"
     ]
   },

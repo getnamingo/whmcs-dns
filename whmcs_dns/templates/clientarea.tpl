@@ -18,7 +18,7 @@
     </div>
 
     <div class="col-auto ms-auto">
-        {if $zone}
+        {if $zone && $canDisableZone}
             <form method="post"
                   action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}"
                   onsubmit="return confirm('Disable DNS and delete the zone for this domain?');"
@@ -29,6 +29,10 @@
                     Disable DNS
                 </button>
             </form>
+        {elseif $zone && !$canDisableZone}
+            <span class="text-muted small" title="This provider does not expose root-zone deletion through Cardo DNS.">
+                Zone deletion unavailable for {$provider|escape}
+            </span>
         {elseif $selectedDomain && (!$zoneLimit || $zoneCount < $zoneLimit)}
             <form method="post"
                   action="index.php?m=whmcs_dns&domain={$selectedDomain|escape:'url'}"
